@@ -28,6 +28,7 @@
       text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
       animation: pulse 2s infinite;
       max-width: 90%;
+      pointer-events: none; /* 避免遮挡点击 */
     }
     @keyframes pulse {
       0%, 100% { opacity: 1; }
@@ -40,15 +41,33 @@
       width: 100%;
       height: 100%;
     }
+    #audio-tip {
+      position: absolute;
+      bottom: 20px;
+      color: rgba(255,255,255,0.6);
+      font-size: 0.9rem;
+      z-index: 20;
+      opacity: 0;
+      transition: opacity 0.5s;
+    }
   </style>
 </head>
 <body>
   <div id="message">舒舒，情人节快乐！<br>点击 anywhere 放烟花 💥</div>
+  <div id="audio-tip">🎵 音乐已开启 · 《Biscuit and Tea》</div>
   <canvas id="canvas"></canvas>
+
+  <!-- 隐藏音频元素 -->
+  <audio id="bgm" loop preload="auto">
+    <source src="biscuit-and-tea.mp3" type="audio/mpeg">
+    Your browser does not support the audio element.
+  </audio>
 
   <script>
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
+    const bgm = document.getElementById('bgm');
+    const audioTip = document.getElementById('audio-tip');
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
 
@@ -84,7 +103,7 @@
       }
 
       update() {
-        this.velocity.y += 0.05; // 微重力
+        this.velocity.y += 0.05;
         this.x += this.velocity.x;
         this.y += this.velocity.y;
         this.alpha -= this.decay;
@@ -95,6 +114,7 @@
 
     const colors = ['#ff00ff', '#00ffff', '#ffff00', '#ff9900', '#00ff00'];
     let particles = [];
+    let musicPlayed = false;
 
     function createFirework(x, y) {
       const color = colors[Math.floor(Math.random() * colors.length)];
@@ -103,22 +123,34 @@
       }
     }
 
+    function playMusic() {
+      if (!musicPlayed) {
+        bgm.volume = 0.3; // 30% 音量，温柔不吵
+        bgm.play().then(() => {
+          musicPlayed = true;
+          audioTip.style.opacity = '1';
+        }).catch(e => {
+          console.log("Auto-play blocked, will play on next click:", e);
+        });
+      }
+    }
+
     function animate() {
       requestAnimationFrame(animate);
       ctx.fillStyle = 'rgba(15, 12, 41, 0.1)';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
-
       particles = particles.filter(p => p.update());
     }
 
+    // 点击事件：放烟花 + 播放音乐
     canvas.addEventListener('click', (e) => {
       createFirework(e.clientX, e.clientY);
+      playMusic();
     });
 
-    // 自动放一个欢迎烟花（可选）
-    setTimeout(() => {
-      createFirework(canvas.width / 2, canvas.height / 2);
-    }, 1000);
+    // 初始欢迎烟花（不自动放，等她点击更浪漫）
+    // 可取消下面这行注释来加一个开场烟花
+    // setTimeout(() => createFirework(canvas.width / 2, canvas.height / 2), 1500);
 
     animate();
   </script>
